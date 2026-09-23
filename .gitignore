@@ -1,0 +1,13 @@
+# HTML aberto (nome de aluno) -- só pagina.enc, criptografado, vai pro repositório
+fonte/
+
+# Segredos -- nunca versionar
+pipeline/.env
+.env
+
+# Cache Python
+__pycache__/
+*.pyc
+
+# Configuração pessoal de editor
+.vscode/
