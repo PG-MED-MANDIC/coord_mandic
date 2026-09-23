@@ -10,9 +10,13 @@ Migrado da conta antiga (`TCM-18/coord_mandic`) em 23/09/2026, **sem o históric
 
 ## Como atualizar
 
-1. Salve o HTML novo (aberto) em `fonte/index_aberto.html`. Essa pasta **nunca** vai pro git.
-2. `python pipeline/publicar.py` e digite a senha do dashboard.
-3. `git add index.html pagina.enc`, depois commit com mensagem descritiva e push.
+1. Salve o HTML novo (aberto) em `fonte/index_aberto.html`, substituindo o anterior. Essa pasta
+   **nunca** vai pro git.
+2. Dê dois cliques em **`Atualizar Dashboard.bat`**. Ele baixa a versão mais recente do GitHub, roda
+   `pipeline/publicar.py` (pede a senha 2 vezes), mostra o que mudou e pergunta se pode publicar. Se
+   você responder `S`, ele faz o commit e o push.
+
+Sem o atalho: `python pipeline/publicar.py`, depois `git add index.html pagina.enc`, commit e push.
 
 Dependência: `pip install -r pipeline/requirements.txt`.
 
