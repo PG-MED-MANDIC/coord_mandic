@@ -52,6 +52,13 @@ def read_di_turma_map(html: str) -> dict:
     return json.loads(m.group(1))
 
 
+def read_const(html: str, name: str) -> list:
+    """Lê (sem alterar) uma constante de dado (`const NAME = [...];`) do HTML de trabalho.
+    Usada pela mescla incremental do Typeform. Constante ausente = lista vazia."""
+    m = re.search(rf"^const {re.escape(name)} = (.*);\s*$", html, re.MULTILINE)
+    return json.loads(m.group(1)) if m else []
+
+
 def upsert_all(html: str, data: dict[str, list[dict]]) -> str:
     # Chaves ausentes em `data` são puladas (não apagadas) -- permite rodar
     # com uma fonte faltando (ex.: checklist-captacao.xlsx do dia ainda não
@@ -87,4 +94,4 @@ def upsert_di_turma_map(html: str, mapa: dict) -> str:
     return "".join(_upsert_const(html.splitlines(keepends=True), "DI_TURMA_MAP", mapa))
 
 
-__all__ = ["NAMES", "upsert_all", "read_di_turma_map", "carregar_mapa_turmas", "upsert_di_turma_map"]
+__all__ = ["NAMES", "upsert_all", "read_const", "read_di_turma_map", "carregar_mapa_turmas", "upsert_di_turma_map"]

@@ -33,7 +33,9 @@ from pathlib import Path
 from config import DADOS_FONTE_DIR, FONTE_PATH, INDEX_HTML_PATH, PAGINA_ENC_PATH, PIPELINE_DIR
 from protecao import cifrar_texto, decifrar_texto, obter_senha
 from publicar import INDEX_HTML, conferir, esvaziar_const, remover_tela_senha_antiga
-from render_index import carregar_mapa_turmas, read_di_turma_map, upsert_all, upsert_di_turma_map
+from render_index import (
+    carregar_mapa_turmas, read_const, read_di_turma_map, upsert_all, upsert_di_turma_map,
+)
 
 # coord_mandic_teste/pipeline/publicar.py tem essa função extra (faixa
 # vermelha "AMBIENTE DE TESTE"); coord_mandic_pgmed/pipeline/publicar.py
@@ -87,9 +89,10 @@ def main() -> int:
         )
         if extra_turmas:
             n_novas = sum(1 for k in extra_turmas if k not in di_turma_map)
+            n_corrigidas = sum(1 for k, v in extra_turmas.items() if k in di_turma_map and di_turma_map[k] != v)
             di_turma_map = {**di_turma_map, **extra_turmas}
             html = upsert_di_turma_map(html, di_turma_map)
-            report.append(f"Mapa de turmas: +{n_novas} novas, {len(extra_turmas) - n_novas} corrigidas (de mapa_turmas.json).")
+            report.append(f"Mapa de turmas: +{n_novas} novas, {n_corrigidas} corrigidas (de mapa_turmas.json).")
         else:
             report.append("Mapa de turmas: mapa_turmas.json não encontrado -- DI_TURMA_MAP mantido.")
     except Exception as e:
@@ -100,9 +103,11 @@ def main() -> int:
     dados: dict[str, list[dict]] = {}
     todos_avisos: list[str] = []
 
-    report.append("FONTE 1/3 -- CSAT por item + Comentários com nome (Indecx)")
+    report.append("FONTE 1/3 -- CSAT por item + Comentários com nome (Indecx + Typeform)")
     try:
-        resultado = sources_csat.montar_dados(di_turma_map)
+        # Histórico já gravado na página: usado só se houver Typeform (mescla por db-id).
+        anteriores = {n: read_const(html, n) for n in ("DATA_GERAL", "DATA_ITENS", "DATA_FEEDBACK_FULL")}
+        resultado = sources_csat.montar_dados(di_turma_map, anteriores)
         todos_avisos.extend(resultado.get("warnings") or [])
         dados["DATA_GERAL"] = resultado["DATA_GERAL"]
         dados["DATA_ITENS"] = resultado["DATA_ITENS"]
@@ -112,6 +117,13 @@ def main() -> int:
             f"  OK -- planilha {resultado.get('arquivo')}: {len(dados['DATA_GERAL'])} respostas, "
             f"{len(dados['DATA_FEEDBACK_FULL'])} comentários."
         )
+        if resultado.get("resumo_typeform"):
+            report.append(f"  Typeform: {resultado['resumo_typeform']}.")
+        if resultado.get("mesclar"):
+            report.append(
+                f"  Mescla: histórico mantido ({resultado.get('historico_mantido', 0)} respostas já gravadas); "
+                f"{resultado.get('rotulos_atualizados', 0)} rótulo(s) de turma atualizado(s)."
+            )
     except Exception as e:
         report.append(f"  FALHOU: {e}")
 
