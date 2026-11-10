@@ -33,7 +33,7 @@ from pathlib import Path
 from config import DADOS_FONTE_DIR, FONTE_PATH, INDEX_HTML_PATH, PAGINA_ENC_PATH, PIPELINE_DIR
 from protecao import cifrar_texto, decifrar_texto, obter_senha
 from publicar import INDEX_HTML, conferir, esvaziar_const, remover_tela_senha_antiga
-from render_index import read_di_turma_map, upsert_all
+from render_index import carregar_mapa_turmas, read_di_turma_map, upsert_all, upsert_di_turma_map
 
 # coord_mandic_teste/pipeline/publicar.py tem essa função extra (faixa
 # vermelha "AMBIENTE DE TESTE"); coord_mandic_pgmed/pipeline/publicar.py
@@ -80,6 +80,18 @@ def main() -> int:
         senha = obter_senha()
         html = _carregar_html_de_trabalho(senha, report)
         di_turma_map = read_di_turma_map(html)
+        # Turmas novas / correções de mapa_turmas.json (gerado LOCAL por
+        # automacao-dashboard/atualizar_mapa_turmas.py, sem dado pessoal).
+        extra_turmas = carregar_mapa_turmas(
+            DADOS_FONTE_DIR, DADOS_FONTE_DIR.parent / "automacao-dashboard" / "dados-fonte"
+        )
+        if extra_turmas:
+            n_novas = sum(1 for k in extra_turmas if k not in di_turma_map)
+            di_turma_map = {**di_turma_map, **extra_turmas}
+            html = upsert_di_turma_map(html, di_turma_map)
+            report.append(f"Mapa de turmas: +{n_novas} novas, {len(extra_turmas) - n_novas} corrigidas (de mapa_turmas.json).")
+        else:
+            report.append("Mapa de turmas: mapa_turmas.json não encontrado -- DI_TURMA_MAP mantido.")
     except Exception as e:
         report.append(f"FALHOU ao carregar o HTML de trabalho (senha errada/ausente?): {type(e).__name__} {e}")
         _log(report)

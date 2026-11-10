@@ -64,4 +64,27 @@ def upsert_all(html: str, data: dict[str, list[dict]]) -> str:
     return "".join(lines)
 
 
-__all__ = ["NAMES", "upsert_all", "read_di_turma_map"]
+
+
+
+def carregar_mapa_turmas(*pastas: Path) -> dict:
+    """Lê `mapa_turmas.json` (DI -> rótulo "Especialidade Unidade - Tn (DI x)"), gerado LOCALMENTE por
+    automacao-dashboard/atualizar_mapa_turmas.py a partir do Book do TOTVS + rótulos do Painel-alunos
+    (sem dado pessoal). Procura na primeira pasta que o tiver. Se não existir ou estiver inválido,
+    devolve {} e o DI_TURMA_MAP segue como está (não quebra a atualização)."""
+    for pasta in pastas:
+        f = Path(pasta) / "mapa_turmas.json"
+        if f.exists():
+            try:
+                return json.loads(f.read_text(encoding="utf-8")).get("mapa") or {}
+            except (ValueError, OSError):
+                return {}
+    return {}
+
+
+def upsert_di_turma_map(html: str, mapa: dict) -> str:
+    """Regrava a constante DI_TURMA_MAP no HTML de trabalho (o navegador usa ela em diTurmaLabel)."""
+    return "".join(_upsert_const(html.splitlines(keepends=True), "DI_TURMA_MAP", mapa))
+
+
+__all__ = ["NAMES", "upsert_all", "read_di_turma_map", "carregar_mapa_turmas", "upsert_di_turma_map"]
