@@ -24,10 +24,10 @@ from pathlib import Path
 
 import pandas as pd
 
-from config import DADOS_FONTE_DIR
+from config import CHECKLIST_REAL_PATH, DADOS_FONTE_DIR
 from consultaja_client import ConsultaJaConfigurationError
 from fetch_consultaja import fetch_and_save
-from transform_slots import build_slots
+from transform_slots import build_slots_hibrido
 from transform_triagem import _prepare
 
 entrada = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
@@ -53,9 +53,9 @@ try:
         )
         saida["arquivo"] = xlsx.name
         saida["DATA_ATD"] = grouped.to_dict(orient="records")
-        if checklist_path is not None and checklist_path.exists():
+        if (checklist_path is not None and checklist_path.exists()) or CHECKLIST_REAL_PATH.exists():
             warnings = []
-            saida["DATA_ATD_SLOTS"] = build_slots(checklist_path, df, warnings=warnings)
+            saida["DATA_ATD_SLOTS"] = build_slots_hibrido(checklist_path, CHECKLIST_REAL_PATH, df, warnings=warnings)
             saida["warnings"] = warnings
 except ConsultaJaConfigurationError as e:
     saida["erro"] = str(e)
